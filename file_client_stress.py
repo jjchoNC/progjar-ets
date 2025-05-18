@@ -103,26 +103,6 @@ def stress_test(operation, size_mb, n_clients):
             results.append(future.result())
     return results
 
-def summarize(results, operation):
-    num = len(results)
-    success = sum(1 for r in results if r["status"])
-    fail = num - success
-    total_time = sum(r["duration"] for r in results)
-    avg_time = round(total_time / num, 4)
-    if operation != 'list':
-        total_throughput = sum(r["throughput"] for r in results if r["status"])
-        avg_throughput = int(total_throughput / success) if success > 0 else 0
-    else:
-        avg_throughput = "-"
-    print("\n=== STRESS TEST RESULT ===")
-    print(f"Operation        : {operation.upper()}")
-    print(f"Total Clients    : {num}")
-    print(f"Success          : {success}")
-    print(f"Fail             : {fail}")
-    print(f"Average Time     : {avg_time} s")
-    print(f"Average Throughput: {avg_throughput} bytes/sec")
-    print("===========================")
-
 def gen_csv(results, args):
     # Nomor
     # Operasi
@@ -138,11 +118,14 @@ def gen_csv(results, args):
         fieldnames = ['No', 'Operation', 'Volume', 'Client Workers', 'Server Workers', 'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        for i, result in enumerate(results):
+        for i in range(len(results)):
+            total_throughput = 0
             num = len(results)
             success = sum(1 for r in results if r["status"])
             fail = num - success
             total_time = sum(r["duration"] for r in results)
+            avg_time = round(total_time / num, 4)
+            avg_throughput = int(total_throughput / success) if success > 0 else 0
             if args.operation != 'list':
                 total_throughput = sum(r["throughput"] for r in results if r["status"])
             writer.writerow({
@@ -156,6 +139,15 @@ def gen_csv(results, args):
                 'Success Clients': success,
                 'Failed Clients': fail
             })
+            
+        print("\n=== STRESS TEST RESULT ===")
+        print(f"Operation        : {args.operation.upper()}")
+        print(f"Total Clients    : {num}")
+        print(f"Success          : {success}")
+        print(f"Fail             : {fail}")
+        print(f"Average Time     : {avg_time} s")
+        print(f"Average Throughput: {avg_throughput} bytes/sec")
+        print("===========================")
             
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
@@ -174,9 +166,8 @@ if __name__ == '__main__':
     
     print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
     result = stress_test(args.operation, args.size, args.clients)
-    summarize(result, args.operation)
     gen_csv(result, args)
     
-# python3 file_client_stress.py --operation list --clients 50 --thread
-# python3 file_client_stress.py --operation get --size 10 --clients 50 --process
-# python3 file_client_stress.py --operation post --size 10 --clients 1 --thread
+# python3 file_client_stress.py --operation list --clients 50
+# python3 file_client_stress.py --operation get --size 10 --clients 50
+# python3 file_client_stress.py --operation post --size 10 --clients 1
