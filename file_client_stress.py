@@ -4,7 +4,8 @@ import base64
 import time
 import logging
 import argparse
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import csv
 
 SERVER_ADDRESS = ('localhost', 6667)
 BUFFER_SIZE = 1024 * 1024
@@ -122,6 +123,34 @@ def summarize(results, operation):
     print(f"Average Throughput: {avg_throughput} bytes/sec")
     print("===========================")
 
+def gen_csv(results, operation):
+    # Nomor
+    # Operasi
+    # Volume
+    # Jumlah client worker pool
+    # Jumlah server worker pool
+    # Waktu total per client
+    # Throughput per client
+    # Jumlah worker client yang sukses dan gagal
+    # Jumlah worker server yang sukses dan gagal
+
+    with open(f'stress_test_results_{time.time()}.csv', 'w', newline='') as csvfile:
+        fieldnames = ['No', 'Operation', 'Volume', 'Client Workers', 'Server Workers', 'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for i, result in enumerate(results):
+            writer.writerow({
+                'No': i + 1,
+                'Operation': operation,
+                'Volume': result['size_mb'],
+                'Client Workers': result['client_workers'],
+                'Server Workers': result['server_workers'],
+                'Total Time (s)': result['duration'],
+                'Throughput (bytes/s)': result['throughput'],
+                'Success Clients': result['success_clients'],
+                'Failed Clients': result['failed_clients']
+            })
+            
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
 
@@ -134,6 +163,7 @@ if __name__ == '__main__':
     print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
     result = stress_test(args.operation, args.size, args.clients)
     summarize(result, args.operation)
+    gen_csv(result, args.operation)
     
 # python3 file_client_stress.py --operation list --clients 50 --thread
 # python3 file_client_stress.py --operation get --size 10 --clients 50 --process
