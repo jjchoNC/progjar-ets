@@ -126,7 +126,10 @@ def gen_csv(results, args):
             if result['status']:
                 success += 1
                 total_time += result['duration']
-                total_throughput += result['throughput']
+                if args.operation != 'list':
+                    total_throughput += result['throughput']
+                else:
+                    total_throughput = "-"
             else:
                 fail += 1
 
