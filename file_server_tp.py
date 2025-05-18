@@ -70,7 +70,7 @@ def main():
         default=10,
     )
     args = parser.parse_args(args)
-    threading.Thread(target=send_server_workers, daemon=True).start()
+    threading.Thread(target=send_server_workers, args=(args,), daemon=True).start()
     
     args = parser.parse_args()
     svr = Server(ipaddress='0.0.0.0', port=6667, max_workers=args.max_workers)
