@@ -2,7 +2,7 @@ from socket import *
 import socket
 import logging
 import time
-import sys
+import argparse
 from concurrent.futures import ThreadPoolExecutor
 
 from file_protocol import FileProtocol
@@ -55,7 +55,14 @@ class Server:
                 self.my_socket.close()
 
 def main():
-    svr = Server(ipaddress='0.0.0.0', port=6666, max_workers=10)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m", "--max_workers",
+        type=int,
+        default=10,
+    )
+    args = parser.parse_args()
+    svr = Server(ipaddress='0.0.0.0', port=6666, max_workers=args.max_workers)
     svr.run()
 
 if __name__ == "__main__":

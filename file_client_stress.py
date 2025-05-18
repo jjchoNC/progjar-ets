@@ -46,10 +46,12 @@ def remote_get(filename):
     try:
         command = f"GET {filename}\r\n\r\n"
         result = send_command(command)
-        filename += '_' + str(IDX_GET)
+        ext = filename.split('.')[-1]
+        filename = filename.split('.')[0] + str(IDX_GET) + '.' + ext
         if result['status'] == 'OK':
             with open(f"{filename}", 'wb') as f:
                 f.write(base64.b64decode(result['data_file']))
+            IDX_GET += 1
             return True
         return False
     except Exception:
@@ -72,17 +74,17 @@ def worker(operation="list", size_mb=10):
         filename = "100mb.bin"
     try:
         if operation == "post":
-            logging.warning(f"POST {filename}")
+            logging.debug(f"POST {filename}")
             start = time.time()
             success = remote_post(filename)
             end = time.time()
         elif operation == "get":
-            logging.warning(f"GET {filename}")
+            logging.debug(f"GET {filename}")
             start = time.time()
             success = remote_get(filename)
             end = time.time()
         elif operation == "list":
-            logging.warning("LIST")
+            logging.debug("LIST")
             start = time.time()
             success = remote_list()
             end = time.time()
