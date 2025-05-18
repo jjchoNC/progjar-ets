@@ -69,7 +69,7 @@ def main():
         type=int,
         default=10,
     )
-    args = parser.parse_args(args)
+    args = parser.parse_args()
     threading.Thread(target=send_server_workers, args=(args,), daemon=True).start()
 
     svr = Server(SERVER_ADDRESS[0], SERVER_ADDRESS[1], max_workers=args.max_workers)
