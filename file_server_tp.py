@@ -61,12 +61,12 @@ def main():
     )
     
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    s.bind(('0.0.0.0', 6668))
-    s.listen()
-    conn, addr = s.accept()
-    with conn:
-        conn.sendall(args.max_workers.to_bytes(4, 'big'))
-        conn.close()
+        s.bind(('0.0.0.0', 6668))
+        s.listen()
+        conn, addr = s.accept()
+        with conn:
+            conn.sendall(args.max_workers.to_bytes(4, 'big'))
+            conn.close()
     
     args = parser.parse_args()
     svr = Server(ipaddress='0.0.0.0', port=6667, max_workers=args.max_workers)
