@@ -1,6 +1,6 @@
 import socket
 import logging
-import time
+import threading
 import argparse
 from concurrent.futures import ProcessPoolExecutor
 
@@ -52,6 +52,16 @@ class Server:
             finally:
                 self.my_socket.close()
 
+def send_server_workers(args):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('0.0.0.0', 6668))
+        s.listen()
+        while True:
+            conn, addr = s.accept()
+            with conn:
+                logging.warning(f"Sending max_workers to {addr}")
+                conn.sendall(args.max_workers.to_bytes(4, 'big'))
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -59,16 +69,9 @@ def main():
         type=int,
         default=10,
     )
-    args = parser.parse_args()
-    
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('0.0.0.0', 6668))
-        s.listen()
-        conn, addr = s.accept()
-        with conn:
-            conn.sendall(args.max_workers.to_bytes(4, 'big'))
-            conn.close()
-    
+    args = parser.parse_args(args)
+    threading.Thread(target=send_server_workers, daemon=True).start()
+
     svr = Server(SERVER_ADDRESS[0], SERVER_ADDRESS[1], max_workers=args.max_workers)
     svr.run()
 
