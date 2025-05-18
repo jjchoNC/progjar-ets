@@ -2,7 +2,7 @@ import socket
 import logging
 import time
 import argparse
-from multiprocessing import Process, BoundedSemaphore
+from concurrent.futures import ProcessPoolExecutor
 
 from file_protocol import FileProtocol
 fp = FileProtocol()
@@ -36,23 +36,23 @@ class Server:
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.backlog = backlog
-        self.sema = BoundedSemaphore(self.max_workers)
 
     def run(self):
         logging.warning(f"server berjalan di ip address {self.ipinfo}")
         self.my_socket.bind(self.ipinfo)
         self.my_socket.listen(self.backlog)
-        try:
-            while True:
-                connection, address = self.my_socket.accept()
-                self.sema.acquire()
-                logging.warning(f"Connection from {address}")
-                p = Process(target=process_client, args=(connection, address, self.sema))
-                p.start()
-        except KeyboardInterrupt:
-            logging.warning("Server shutting down.")
-        finally:
-            self.my_socket.close()
+        with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+            try:
+                while True:
+                    connection, address = self.my_socket.accept()
+                    self.sema.acquire()
+                    logging.warning(f"Connection from {address}")
+                    p = Process(target=process_client, args=(connection, address, self.sema))
+                    p.start()
+            except KeyboardInterrupt:
+                logging.warning("Server shutting down.")
+            finally:
+                self.my_socket.close()
 
 def main():
     parser = argparse.ArgumentParser()

@@ -4,7 +4,7 @@ import base64
 import time
 import logging
 import argparse
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
 SERVER_ADDRESS = ('localhost', 6666)
 BUFFER_SIZE = 1024 * 1024
@@ -97,7 +97,7 @@ def worker(operation="list", size_mb=10):
 
 def stress_test(operation, size_mb, n_clients):
     results = []
-    pool = ProcessPoolExecutor
+    pool = ThreadPoolExecutor
     with pool(max_workers=n_clients) as executor:
         futures = [executor.submit(worker, operation, size_mb) for _ in range(n_clients)]
         for future in as_completed(futures):
