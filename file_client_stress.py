@@ -170,7 +170,7 @@ if __name__ == '__main__':
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((SERVER_ADDRESS[0], 6668))
         data = s.recv(1024)
-        args.server_workers = int(data.decode())
+        args.server_workers = int.from_bytes(data, byteorder='big')
     
     print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
     result = stress_test(args.operation, args.size, args.clients)
