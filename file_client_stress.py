@@ -2,12 +2,9 @@ import socket
 import json
 import base64
 import time
-import os
-import string
-import random
 import logging
 import argparse
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 SERVER_ADDRESS = ('localhost', 6666)
 BUFFER_SIZE = 1024 * 1024
@@ -98,9 +95,9 @@ def worker(operation="list", size_mb=10):
         return {"status": False, "duration": 0, "error": str(e)}
 
 
-def stress_test(operation, size_mb, n_clients, use_thread=True):
+def stress_test(operation, size_mb, n_clients):
     results = []
-    pool = ThreadPoolExecutor if use_thread else ProcessPoolExecutor
+    pool = ProcessPoolExecutor
     with pool(max_workers=n_clients) as executor:
         futures = [executor.submit(worker, operation, size_mb) for _ in range(n_clients)]
         for future in as_completed(futures):
@@ -134,14 +131,14 @@ if __name__ == '__main__':
     parser.add_argument('--operation', choices=['post', 'get', 'list'], default='list', help='operation to stress')
     parser.add_argument('--size', type=int, default=10, help='file size in MB (ignored for list)')
     parser.add_argument('--clients', type=int, default=5, help='number of concurrent clients')
-    parser.add_argument('--thread', action='store_true', help='use ThreadPoolExecutor')
-    parser.add_argument('--process', action='store_true', help='use ProcessPoolExecutor')
+    # parser.add_argument('--thread', action='store_true', help='use ThreadPoolExecutor')
+    # parser.add_argument('--process', action='store_true', help='use ProcessPoolExecutor')
 
     args = parser.parse_args()
-    use_thread = args.thread or not args.process
+    # use_thread = args.process
 
-    print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}, method={'Thread' if use_thread else 'Process'}")
-    result = stress_test(args.operation, args.size, args.clients, use_thread)
+    print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
+    result = stress_test(args.operation, args.size, args.clients)
     summarize(result, args.operation)
     
 # python3 file_client_stress.py --operation list --clients 50 --thread
