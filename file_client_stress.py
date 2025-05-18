@@ -118,35 +118,37 @@ def gen_csv(results, args):
         fieldnames = ['No', 'Operation', 'Volume', 'Client Workers', 'Server Workers', 'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        for i in range(len(results)):
-            total_throughput = 0
-            num = len(results)
-            success = sum(1 for r in results if r["status"])
-            fail = num - success
-            total_time = sum(r["duration"] for r in results)
-            avg_time = round(total_time / num, 4)
-            avg_throughput = int(total_throughput / success) if success > 0 else 0
-            if args.operation != 'list':
-                total_throughput = sum(r["throughput"] for r in results if r["status"])
-            writer.writerow({
-                'No': i + 1,
-                'Operation': args.operation,
-                'Volume': args.size,
-                'Client Workers': args.clients,
-                'Server Workers': args.server_workers,
-                'Total Time (s)': total_time,
-                'Throughput (bytes/s)': total_throughput,
-                'Success Clients': success,
-                'Failed Clients': fail
-            })
+        total_time = 0
+        total_throughput = 0
+        success = 0
+        fail = 0
+        for i, result in enumerate(results):
+            if result['status']:
+                success += 1
+                total_time += result['duration']
+                total_throughput += result['throughput']
+            else:
+                fail += 1
+                
+        writer.writerow({
+            'No': i + 1,
+            'Operation': args.operation,
+            'Volume': args.size,
+            'Client Workers': args.clients,
+            'Server Workers': args.server_workers,
+            'Total Time (s)': total_time,
+            'Throughput (bytes/s)': total_throughput,
+            'Success Clients': success,
+            'Failed Clients': fail
+        })
             
         print("\n=== STRESS TEST RESULT ===")
         print(f"Operation        : {args.operation.upper()}")
-        print(f"Total Clients    : {num}")
+        print(f"Total Clients    : {args.clients}")
         print(f"Success          : {success}")
         print(f"Fail             : {fail}")
-        print(f"Average Time     : {avg_time} s")
-        print(f"Average Throughput: {avg_throughput} bytes/sec")
+        print(f"Time             : {total_time} s")
+        print(f"Throughput       : {total_throughput} bytes/sec")
         print("===========================")
             
 if __name__ == '__main__':
