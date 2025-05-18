@@ -6,6 +6,7 @@ import logging
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
+import os
 
 SERVER_ADDRESS = ('172.16.16.102', 6667)
 BUFFER_SIZE = 1024 * 1024
@@ -104,20 +105,19 @@ def stress_test(operation, size_mb, n_clients):
     return results
 
 def gen_csv(results, args):
-    # Nomor
-    # Operasi
-    # Volume
-    # Jumlah client worker pool
-    # Jumlah server worker pool
-    # Waktu total per client
-    # Throughput per client
-    # Jumlah worker client yang sukses dan gagal
-    # Jumlah worker server yang sukses dan gagal
+    filename = 'stress_test_results.csv'
+    file_exists = os.path.isfile(filename)
 
-    with open(f'stress_test_results_{time.time()}.csv', 'w', newline='') as csvfile:
-        fieldnames = ['No', 'Operation', 'Volume', 'Client Workers', 'Server Workers', 'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients']
+    with open(filename, 'a', newline='') as csvfile:
+        fieldnames = [
+            'No', 'Operation', 'Volume', 'Client Workers', 'Server Workers',
+            'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients'
+        ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+
+        if not file_exists:
+            writer.writeheader()
+
         total_time = 0
         total_throughput = 0
         success = 0
@@ -129,7 +129,7 @@ def gen_csv(results, args):
                 total_throughput += result['throughput']
             else:
                 fail += 1
-                
+
         writer.writerow({
             'No': i + 1,
             'Operation': args.operation,
@@ -141,7 +141,7 @@ def gen_csv(results, args):
             'Success Clients': success,
             'Failed Clients': fail
         })
-            
+
         print("\n=== STRESS TEST RESULT ===")
         print(f"Operation        : {args.operation.upper()}")
         print(f"Total Clients    : {args.clients}")
