@@ -7,6 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from file_protocol import FileProtocol
 fp = FileProtocol()
 
+SERVER_ADDRESS = ('0.0.0.0', 6667)
 BUFFER_SIZE = 1024 * 1024
 
 def process_client(connection, address, sema):
@@ -59,7 +60,16 @@ def main():
         default=10,
     )
     args = parser.parse_args()
-    svr = Server(ipaddress='0.0.0.0', port=6667, max_workers=args.max_workers)
+    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('0.0.0.0', 6668))
+        s.listen()
+        conn, addr = s.accept()
+        with conn:
+            conn.sendall(args.max_workers.to_bytes(4, 'big'))
+            conn.close()
+    
+    svr = Server(SERVER_ADDRESS[0], SERVER_ADDRESS[1], max_workers=args.max_workers)
     svr.run()
 
 if __name__ == "__main__":

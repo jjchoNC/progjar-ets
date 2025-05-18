@@ -7,7 +7,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
 
-SERVER_ADDRESS = ('localhost', 6667)
+SERVER_ADDRESS = ('172.16.16.102', 6667)
 BUFFER_SIZE = 1024 * 1024
 IDX_GET = 0
 
@@ -123,7 +123,7 @@ def summarize(results, operation):
     print(f"Average Throughput: {avg_throughput} bytes/sec")
     print("===========================")
 
-def gen_csv(results, operation):
+def gen_csv(results, args):
     # Nomor
     # Operasi
     # Volume
@@ -139,16 +139,22 @@ def gen_csv(results, operation):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for i, result in enumerate(results):
+            num = len(results)
+            success = sum(1 for r in results if r["status"])
+            fail = num - success
+            total_time = sum(r["duration"] for r in results)
+            if args.operation != 'list':
+                total_throughput = sum(r["throughput"] for r in results if r["status"])
             writer.writerow({
                 'No': i + 1,
-                'Operation': operation,
-                'Volume': result['size_mb'],
-                'Client Workers': result['client_workers'],
-                'Server Workers': result['server_workers'],
-                'Total Time (s)': result['duration'],
-                'Throughput (bytes/s)': result['throughput'],
-                'Success Clients': result['success_clients'],
-                'Failed Clients': result['failed_clients']
+                'Operation': args.operation,
+                'Volume': args.size,
+                'Client Workers': args.clients,
+                'Server Workers': args.server_workers,
+                'Total Time (s)': total_time,
+                'Throughput (bytes/s)': total_throughput,
+                'Success Clients': success,
+                'Failed Clients': fail
             })
             
 if __name__ == '__main__':
@@ -160,10 +166,16 @@ if __name__ == '__main__':
     parser.add_argument('--clients', type=int, default=5, help='number of concurrent clients')
     
     args = parser.parse_args()
+    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((SERVER_ADDRESS[0], 6668))
+        data = s.recv(1024)
+        args.server_workers = int(data.decode())
+    
     print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
     result = stress_test(args.operation, args.size, args.clients)
     summarize(result, args.operation)
-    gen_csv(result, args.operation)
+    gen_csv(result, args)
     
 # python3 file_client_stress.py --operation list --clients 50 --thread
 # python3 file_client_stress.py --operation get --size 10 --clients 50 --process
