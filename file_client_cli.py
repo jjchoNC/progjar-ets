@@ -93,7 +93,7 @@ def remote_delete(filename=""):
 
 if __name__=='__main__':
     # server_address=('172.16.16.101',6666)
-    server_address=('localhost',6666)
+    server_address=('localhost',6667)
     # remote_get('test.txt')    
     remote_post('10mb.bin')
     remote_list()

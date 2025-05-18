@@ -1,4 +1,3 @@
-from socket import *
 import socket
 import logging
 import time
@@ -19,12 +18,9 @@ def process_client(connection, address):
             if data:
                 d += data.decode()
                 if "\r\n\r\n" in d:
-                    # print("MASUK")
                     hasil = fp.proses_string(d.strip())
-                    # print("SUDAH DI PROSES")
                     hasil = hasil + "\r\n\r\n"
                     connection.sendall(hasil.encode())
-                    # print(f"Data dikirim ke {address}")
                     break
             else:
                 break
@@ -50,7 +46,7 @@ class Server:
                 while True:
                     connection, address = self.my_socket.accept()
                     logging.warning(f"Accepted connection from {address}")
-                    executor.submit(process_client, connection, address, executor._max_workers)
+                    executor.submit(process_client, connection, address)
             except KeyboardInterrupt:
                 logging.warning("Server shutting down.")
             finally:

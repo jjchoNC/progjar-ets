@@ -6,7 +6,7 @@ import logging
 import argparse
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
-SERVER_ADDRESS = ('localhost', 6666)
+SERVER_ADDRESS = ('localhost', 6667)
 BUFFER_SIZE = 1024 * 1024
 IDX_GET = 0
 
@@ -44,11 +44,10 @@ def remote_get(filename):
         command = f"GET {filename}\r\n\r\n"
         result = send_command(command)
         ext = filename.split('.')[-1]
-        filename = filename.split('.')[0] + str(IDX_GET) + '.' + ext
+        filename = filename.split('.')[0] + "_" + str(time.time()) + '.' + ext
         if result['status'] == 'OK':
             with open(f"{filename}", 'wb') as f:
                 f.write(base64.b64decode(result['data_file']))
-            IDX_GET += 1
             return True
         return False
     except Exception:
@@ -97,8 +96,7 @@ def worker(operation="list", size_mb=10):
 
 def stress_test(operation, size_mb, n_clients):
     results = []
-    pool = ThreadPoolExecutor
-    with pool(max_workers=n_clients) as executor:
+    with ThreadPoolExecutor(max_workers=n_clients) as executor:
         futures = [executor.submit(worker, operation, size_mb) for _ in range(n_clients)]
         for future in as_completed(futures):
             results.append(future.result())
@@ -131,12 +129,8 @@ if __name__ == '__main__':
     parser.add_argument('--operation', choices=['post', 'get', 'list'], default='list', help='operation to stress')
     parser.add_argument('--size', type=int, default=10, help='file size in MB (ignored for list)')
     parser.add_argument('--clients', type=int, default=5, help='number of concurrent clients')
-    # parser.add_argument('--thread', action='store_true', help='use ThreadPoolExecutor')
-    # parser.add_argument('--process', action='store_true', help='use ProcessPoolExecutor')
-
+    
     args = parser.parse_args()
-    # use_thread = args.process
-
     print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
     result = stress_test(args.operation, args.size, args.clients)
     summarize(result, args.operation)
