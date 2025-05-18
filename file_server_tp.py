@@ -12,13 +12,17 @@ def process_client(connection, address):
     d = ''
     try:
         while True:
-            data = connection.recv(32)
+            data = connection.recv(2**16)
+            # print(len(d))
             if data:
                 d += data.decode()
                 if "\r\n\r\n" in d:
+                    # print("MASUK")
                     hasil = fp.proses_string(d.strip())
+                    # print("SUDAH DI PROSES")
                     hasil = hasil + "\r\n\r\n"
                     connection.sendall(hasil.encode())
+                    # print(f"Data dikirim ke {address}")
                     break
             else:
                 break

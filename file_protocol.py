@@ -22,11 +22,11 @@ class FileProtocol:
     def __init__(self):
         self.file = FileInterface()
     def proses_string(self,string_datamasuk=''):
-        logging.warning(f"string diproses: {string_datamasuk}")
-        c = shlex.split(string_datamasuk.lower())
+        # logging.warning(f"string diproses: {string_datamasuk}")
+        c = string_datamasuk.split(' ')
         try:
-            c_request = c[0].strip()
-            logging.warning(f"memproses request: {c_request}")
+            c_request = c[0].strip().lower()
+            # logging.warning(f"memproses request: {c_request}")
             params = [x for x in c[1:]]
             cl = getattr(self.file,c_request)(params)
             return json.dumps(cl)

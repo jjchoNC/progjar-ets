@@ -1,2 +1,4 @@
 files_bu/
 __pycache__/
+*.bin
+board

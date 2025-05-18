@@ -4,6 +4,7 @@ import base64
 import logging
 
 server_address=('0.0.0.0',7777)
+BUFFER_SIZE = 2**16
 
 def send_command(command_str=""):
     global server_address
@@ -17,7 +18,7 @@ def send_command(command_str=""):
         data_received="" #empty string
         while True:
             #socket does not receive all data at once, data comes in part, need to be concatenated at the end of process
-            data = sock.recv(16)
+            data = sock.recv(BUFFER_SIZE)
             if data:
                 #data is not empty, concat with previous content
                 data_received += data.decode()
@@ -93,8 +94,7 @@ def remote_delete(filename=""):
 if __name__=='__main__':
     # server_address=('172.16.16.101',6666)
     server_address=('localhost',6666)
-    remote_get('donalbebek.jpg')
-    remote_post('donalbebek.jpg')
+    # remote_get('test.txt')    
+    remote_post('10mb.bin')
     remote_list()
     # remote_delete('donalbebek.jpg')
-
