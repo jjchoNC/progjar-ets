@@ -4,7 +4,7 @@ import base64
 import logging
 
 server_address=('0.0.0.0',7777)
-BUFFER_SIZE = 2**16
+BUFFER_SIZE = 1024 * 1024
 
 def send_command(command_str=""):
     global server_address

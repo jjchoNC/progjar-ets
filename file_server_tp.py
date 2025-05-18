@@ -8,11 +8,13 @@ from concurrent.futures import ThreadPoolExecutor
 from file_protocol import FileProtocol
 fp = FileProtocol()
 
+BUFFER_SIZE = 1024 * 1024
+
 def process_client(connection, address):
     d = ''
     try:
         while True:
-            data = connection.recv(2**16)
+            data = connection.recv(BUFFER_SIZE)
             # print(len(d))
             if data:
                 d += data.decode()
@@ -62,7 +64,7 @@ def main():
         default=10,
     )
     args = parser.parse_args()
-    svr = Server(ipaddress='0.0.0.0', port=6666, max_workers=args.max_workers)
+    svr = Server(ipaddress='0.0.0.0', port=6667, max_workers=args.max_workers)
     svr.run()
 
 if __name__ == "__main__":

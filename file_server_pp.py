@@ -1,17 +1,19 @@
 import socket
 import logging
 import time
-import sys
-from multiprocessing import Process
+import argparse
+from multiprocessing import Process, BoundedSemaphore
 
 from file_protocol import FileProtocol
 fp = FileProtocol()
 
-def process_client(connection, address):
+BUFFER_SIZE = 1024 * 1024
+
+def process_client(connection, address, sema):
     d = ''
     try:
         while True:
-            data = connection.recv(32)
+            data = connection.recv(BUFFER_SIZE)
             if data:
                 d += data.decode()
                 if "\r\n\r\n" in d:
@@ -25,13 +27,16 @@ def process_client(connection, address):
         logging.error(f"Error handling client {address}: {e}")
     finally:
         connection.close()
+        sema.release()
 
 class Server:
-    def __init__(self, ipaddress='0.0.0.0', port=8889, backlog=5):
+    def __init__(self, ipaddress='0.0.0.0', port=8889, max_workers=10, backlog=5):
         self.ipinfo = (ipaddress, port)
+        self.max_workers = max_workers
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.backlog = backlog
+        self.sema = BoundedSemaphore(self.max_workers)
 
     def run(self):
         logging.warning(f"server berjalan di ip address {self.ipinfo}")
@@ -40,8 +45,9 @@ class Server:
         try:
             while True:
                 connection, address = self.my_socket.accept()
-                logging.warning(f"connection from {address}")
-                p = Process(target=process_client, args=(connection, address))
+                self.sema.acquire()
+                logging.warning(f"Connection from {address}")
+                p = Process(target=process_client, args=(connection, address, self.sema))
                 p.start()
         except KeyboardInterrupt:
             logging.warning("Server shutting down.")
@@ -49,7 +55,14 @@ class Server:
             self.my_socket.close()
 
 def main():
-    svr = Server(ipaddress='0.0.0.0', port=6666)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-m", "--max_workers",
+        type=int,
+        default=10,
+    )
+    args = parser.parse_args()
+    svr = Server(ipaddress='0.0.0.0', port=6667, max_workers=args.max_workers)
     svr.run()
 
 if __name__ == "__main__":

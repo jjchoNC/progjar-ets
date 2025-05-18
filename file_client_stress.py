@@ -10,7 +10,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 
 SERVER_ADDRESS = ('localhost', 6666)
-BUFFER_SIZE = 2**16
+BUFFER_SIZE = 1024 * 1024
 IDX_GET = 0
 
 def send_command(command_str=""):
