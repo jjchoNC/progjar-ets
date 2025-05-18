@@ -50,7 +50,7 @@ class Server:
                 while True:
                     connection, address = self.my_socket.accept()
                     logging.warning(f"Accepted connection from {address}")
-                    executor.submit(process_client, connection, address)
+                    executor.submit(process_client, connection, address, executor._max_workers)
             except KeyboardInterrupt:
                 logging.warning("Server shutting down.")
             finally:

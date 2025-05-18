@@ -30,25 +30,22 @@ def process_client(connection, address, sema):
         sema.release()
 
 class Server:
-    def __init__(self, ipaddress='0.0.0.0', port=8889, max_workers=10, backlog=5):
+    def __init__(self, ipaddress='0.0.0.0', port=8889, max_workers=10):
         self.ipinfo = (ipaddress, port)
-        self.max_workers = max_workers
         self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.backlog = backlog
-
+        self.max_workers = max_workers
+        
     def run(self):
         logging.warning(f"server berjalan di ip address {self.ipinfo}")
         self.my_socket.bind(self.ipinfo)
-        self.my_socket.listen(self.backlog)
+        self.my_socket.listen(10)
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             try:
                 while True:
                     connection, address = self.my_socket.accept()
-                    self.sema.acquire()
-                    logging.warning(f"Connection from {address}")
-                    p = Process(target=process_client, args=(connection, address, self.sema))
-                    p.start()
+                    logging.warning(f"Accepted connection from {address}")
+                    executor.submit(process_client, connection, address, executor._max_workers)
             except KeyboardInterrupt:
                 logging.warning("Server shutting down.")
             finally:
