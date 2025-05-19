@@ -6,7 +6,7 @@ comb3 = [1, 5, 50] #client worker pool
 
 for operation in comb1:
     temp = input(f"Jalankan operasi {operation} sekarang? (y/n): ")
-    if temp.lower() != 'n':
+    if temp.lower() != 'y':
         print("Operasi dibatalkan.")
         continue
     for size_mb in comb2:
