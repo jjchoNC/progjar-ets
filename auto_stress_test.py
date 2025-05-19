@@ -5,6 +5,7 @@ import time
 import logging
 import csv
 import os
+import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SERVER_ADDRESS = ('172.16.16.102', 6667)
@@ -181,9 +182,9 @@ if __name__ == '__main__':
     for operation in operations:
         for size in sizes:
             if operation == "get":
-                delete_file = f"{size}mb.bin"
-                if os.path.exists(delete_file):
-                    os.remove(delete_file)
+                delete_pattern = f"{size}mb_*.bin"
+                for file in glob.glob(delete_pattern):
+                    os.remove(file)
             for client_count in clients:
                 print(f"Running stress test: operation={operation}, size={size}MB, clients={client_count}")
                 results = stress_test(operation, size, client_count)
