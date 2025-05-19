@@ -11,7 +11,6 @@ import os
 SERVER_ADDRESS = ('172.16.16.102', 6667)
 BUFFER_SIZE = 1024 * 1024
 IDX_GET = 0
-no_csv = 1
 
 def send_command(command_str=""):
     try:
@@ -136,7 +135,6 @@ def gen_csv(results, args):
                 fail += 1
 
         writer.writerow({
-            'No': no_csv,
             'Operation': args.operation,
             'Volume': args.size,
             'Client Workers': args.clients,
@@ -146,7 +144,7 @@ def gen_csv(results, args):
             'Success Clients': success,
             'Failed Clients': fail
         })
-        no_csv += 1
+
         print("\n=== STRESS TEST RESULT ===")
         print(f"Operation        : {args.operation.upper()}")
         print(f"Total Clients    : {args.clients}")
