@@ -86,7 +86,7 @@ def worker(client_id, operation="list", size_mb=10):
             return {"status": False, "duration": 0, "error": "Unknown operation"}
 
         duration = round(end - start, 4)
-        throughput = int(size_mb * 1024 * 1024 / duration) if duration > 0 and operation != 'list' else "-"
+        throughput = round(int(size_mb * 1024 * 1024 / duration), 4) if duration > 0 and operation != 'list' else "-"
         return {"client_id": client_id, "status": success, "duration": duration, "throughput": throughput}
     except Exception as e:
         return {"client_id": client_id, "status": False, "duration": 0, "error": str(e)}
@@ -180,6 +180,10 @@ if __name__ == '__main__':
 
     for operation in operations:
         for size in sizes:
+            if operation == "get":
+                delete_file = f"{size}mb.bin"
+                if os.path.exists(delete_file):
+                    os.remove(delete_file)
             for client_count in clients:
                 print(f"Running stress test: operation={operation}, size={size}MB, clients={client_count}")
                 results = stress_test(operation, size, client_count)
