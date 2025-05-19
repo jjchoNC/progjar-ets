@@ -10,7 +10,6 @@ import os
 
 SERVER_ADDRESS = ('172.16.16.102', 6667)
 BUFFER_SIZE = 1024 * 1024
-IDX_GET = 0
 
 def send_command(command_str=""):
     try:
@@ -63,43 +62,42 @@ def remote_list():
     except Exception:
         return False
 
-def worker(operation="list", size_mb=10):
-    if size_mb== 10:
+def worker(client_id, operation="list", size_mb=10):
+    print(f"[Client {client_id}] Starting {operation.upper()} operation")
+    if size_mb == 10:
         filename = "10mb.bin"
     elif size_mb == 50:
         filename = "50mb.bin"
     elif size_mb == 100:
         filename = "100mb.bin"
+    else:
+        filename = f"{size_mb}mb.bin"
+    
     try:
+        start = time.time()
         if operation == "post":
-            logging.debug(f"POST {filename}")
-            start = time.time()
+            logging.debug(f"[Client {client_id}] POST {filename}")
             success = remote_post(filename)
-            end = time.time()
         elif operation == "get":
-            logging.debug(f"GET {filename}")
-            start = time.time()
+            logging.debug(f"[Client {client_id}] GET {filename}")
             success = remote_get(filename)
-            end = time.time()
         elif operation == "list":
-            logging.debug("LIST")
-            start = time.time()
+            logging.debug(f"[Client {client_id}] LIST")
             success = remote_list()
-            end = time.time()
         else:
-            return {"status": False, "duration": 0, "error": "Unknown operation"}
+            return {"client_id": client_id, "status": False, "duration": 0, "error": "Unknown operation"}
 
+        end = time.time()
         duration = round(end - start, 4)
         throughput = int(size_mb * 1024 * 1024 / duration) if duration > 0 and operation != 'list' else "-"
-        return {"status": success, "duration": duration, "throughput": throughput}
+        return {"client_id": client_id, "status": success, "duration": duration, "throughput": throughput}
     except Exception as e:
-        return {"status": False, "duration": 0, "error": str(e)}
-
+        return {"client_id": client_id, "status": False, "duration": 0, "error": str(e)}
 
 def stress_test(operation, size_mb, n_clients):
     results = []
     with ThreadPoolExecutor(max_workers=n_clients) as executor:
-        futures = [executor.submit(worker, operation, size_mb) for _ in range(n_clients)]
+        futures = [executor.submit(worker, i + 1, operation, size_mb) for i in range(n_clients)]
         for future in as_completed(futures):
             results.append(future.result())
     return results
@@ -152,9 +150,9 @@ def gen_csv(results, args):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         if not file_exists:
             writer.writeheader()
-        for idx, result in enumerate(results, 1):
+        for result in results:
             writer.writerow({
-                'Client ID': idx,
+                'Client ID': result.get('client_id', '-'),
                 'Status': 'Success' if result['status'] else 'Fail',
                 'Duration (s)': result['duration'],
                 'Throughput (bytes/s)': result.get('throughput', '-'),
@@ -169,7 +167,7 @@ def gen_csv(results, args):
     print(f"Time             : {round(total_time, 4)} s")
     print(f"Throughput       : {total_throughput} bytes/sec")
     print("===========================")
-            
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
 
@@ -177,18 +175,20 @@ if __name__ == '__main__':
     parser.add_argument('--operation', choices=['post', 'get', 'list'], default='list', help='operation to stress')
     parser.add_argument('--size', type=int, default=10, help='file size in MB (ignored for list)')
     parser.add_argument('--clients', type=int, default=5, help='number of concurrent clients')
-    
+
     args = parser.parse_args()
-    
+
+    # Retrieve server worker count
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((SERVER_ADDRESS[0], 6668))
         data = s.recv(1024)
         args.server_workers = int.from_bytes(data, byteorder='big')
-    
+
     print(f"Running stress test: operation={args.operation}, size={args.size}MB, clients={args.clients}")
     result = stress_test(args.operation, args.size, args.clients)
     gen_csv(result, args)
-    
+
+# Example usage:
 # python3 file_client_stress.py --operation list --clients 50
 # python3 file_client_stress.py --operation get --size 10 --clients 50
 # python3 file_client_stress.py --operation post --size 10 --clients 1
