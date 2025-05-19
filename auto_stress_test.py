@@ -108,27 +108,27 @@ def gen_csv(results, operation, size, clients, server_workers):
     with open(summary_file, 'a', newline='') as csvfile:
         fieldnames = [
             'No', 'Operation', 'Volume', 'Client Workers', 'Server Workers',
-            'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients'
+            'Average Time (s)', 'Average Throughput (bytes/s)', 'Success Clients', 'Failed Clients'
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         if not file_exists:
             writer.writeheader()
 
-        total_time = 0
-        total_throughput = 0
+        sum_duration = 0
+        sum_throughput = 0
         success = 0
         fail = 0
         for result in results:
             if result['status']:
                 success += 1
-                total_time += result['duration']
+                sum_duration += result['duration']
                 if operation != 'list':
-                    total_throughput += result['throughput']
-                else:
-                    total_throughput = "-"
-
+                    sum_throughput += result['throughput']
             else:
                 fail += 1
+
+        avg_time = round(sum_duration / success, 4) if success > 0 else "-"
+        avg_throughput = round(sum_throughput / success, 4) if success > 0 and operation != 'list' else "-"
 
         writer.writerow({
             'No': sum(1 for _ in open(summary_file)) if file_exists else 1,
@@ -136,8 +136,8 @@ def gen_csv(results, operation, size, clients, server_workers):
             'Volume': size,
             'Client Workers': clients,
             'Server Workers': server_workers,
-            'Total Time (s)': round(total_time, 4),
-            'Throughput (bytes/s)': total_throughput,
+            'Average Time (s)': avg_time,
+            'Average Throughput (bytes/s)': avg_throughput,
             'Success Clients': success,
             'Failed Clients': fail
         })
@@ -163,8 +163,8 @@ def gen_csv(results, operation, size, clients, server_workers):
     print(f"Clients          : {clients}")
     print(f"Success          : {success}")
     print(f"Fail             : {fail}")
-    print(f"Time             : {round(total_time, 4)} s")
-    print(f"Throughput       : {total_throughput} bytes/sec")
+    print(f"Avg Time         : {avg_time} s")
+    print(f"Avg Throughput   : {avg_throughput} bytes/sec")
     print("===========================\n")
 
 if __name__ == '__main__':
