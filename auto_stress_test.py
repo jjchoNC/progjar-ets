@@ -62,7 +62,7 @@ def remote_list():
     except Exception:
         return False
 
-def worker(operation="list", size_mb=10):
+def worker(client_id, operation="list", size_mb=10):
     if size_mb == 10:
         filename = "10mb.bin"
     elif size_mb == 50:
@@ -87,14 +87,14 @@ def worker(operation="list", size_mb=10):
 
         duration = round(end - start, 4)
         throughput = int(size_mb * 1024 * 1024 / duration) if duration > 0 and operation != 'list' else "-"
-        return {"status": success, "duration": duration, "throughput": throughput}
+        return {"client_id": client_id, "status": success, "duration": duration, "throughput": throughput}
     except Exception as e:
-        return {"status": False, "duration": 0, "error": str(e)}
+        return {"client_id": client_id, "status": False, "duration": 0, "error": str(e)}
 
 def stress_test(operation, size_mb, n_clients):
     results = []
     with ThreadPoolExecutor(max_workers=n_clients) as executor:
-        futures = [executor.submit(worker, operation, size_mb) for _ in range(n_clients)]
+        futures = [executor.submit(worker, _, operation, size_mb) for _ in range(n_clients)]
         for future in as_completed(futures):
             results.append(future.result())
     return results
@@ -147,9 +147,9 @@ def gen_csv(results, operation, size, clients, server_workers):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         if not file_exists:
             writer.writeheader()
-        for idx, result in enumerate(results, 1):
+        for _, result in enumerate(results, 1):
             writer.writerow({
-                'Client ID': idx,
+                'Client ID': result['client_id'],
                 'Status': 'Success' if result['status'] else 'Fail',
                 'Duration (s)': result['duration'],
                 'Throughput (bytes/s)': result.get('throughput', '-'),
