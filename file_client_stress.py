@@ -105,17 +105,16 @@ def stress_test(operation, size_mb, n_clients):
     return results
 
 def gen_csv(results, args):
-    global no_csv
-    filename = 'stress_test_results.csv'
-    file_exists = os.path.isfile(filename)
+    filename_summary = 'stress_test_results.csv'
+    filename_detail = 'stress_test_client_details.csv'
 
-    with open(filename, 'a', newline='') as csvfile:
+    file_exists = os.path.isfile(filename_summary)
+    with open(filename_summary, 'a', newline='') as csvfile:
         fieldnames = [
             'No', 'Operation', 'Volume', 'Client Workers', 'Server Workers',
             'Total Time (s)', 'Throughput (bytes/s)', 'Success Clients', 'Failed Clients'
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-
         if not file_exists:
             writer.writeheader()
 
@@ -123,7 +122,7 @@ def gen_csv(results, args):
         total_throughput = 0
         success = 0
         fail = 0
-        for i, result in enumerate(results):
+        for result in results:
             if result['status']:
                 success += 1
                 total_time += result['duration']
@@ -131,28 +130,45 @@ def gen_csv(results, args):
                     total_throughput += result['throughput']
                 else:
                     total_throughput = "-"
+
             else:
                 fail += 1
 
         writer.writerow({
+            'No': sum(1 for _ in open(filename_summary)) if file_exists else 1,
             'Operation': args.operation,
             'Volume': args.size,
             'Client Workers': args.clients,
             'Server Workers': args.server_workers,
-            'Total Time (s)': total_time,
+            'Total Time (s)': round(total_time, 4),
             'Throughput (bytes/s)': total_throughput,
             'Success Clients': success,
             'Failed Clients': fail
         })
 
-        print("\n=== STRESS TEST RESULT ===")
-        print(f"Operation        : {args.operation.upper()}")
-        print(f"Total Clients    : {args.clients}")
-        print(f"Success          : {success}")
-        print(f"Fail             : {fail}")
-        print(f"Time             : {total_time} s")
-        print(f"Throughput       : {total_throughput} bytes/sec")
-        print("===========================")
+    file_exists = os.path.isfile(filename_detail)
+    with open(filename_detail, 'a', newline='') as csvfile:
+        fieldnames = ['Client ID', 'Status', 'Duration (s)', 'Throughput (bytes/s)', 'Operation']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        for idx, result in enumerate(results, 1):
+            writer.writerow({
+                'Client ID': idx,
+                'Status': 'Success' if result['status'] else 'Fail',
+                'Duration (s)': result['duration'],
+                'Throughput (bytes/s)': result.get('throughput', '-'),
+                'Operation': args.operation
+            })
+
+    print("\n=== STRESS TEST RESULT ===")
+    print(f"Operation        : {args.operation.upper()}")
+    print(f"Total Clients    : {args.clients}")
+    print(f"Success          : {success}")
+    print(f"Fail             : {fail}")
+    print(f"Time             : {round(total_time, 4)} s")
+    print(f"Throughput       : {total_throughput} bytes/sec")
+    print("===========================")
             
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
